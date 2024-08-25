@@ -1,3 +1,4 @@
+import 'package:expense_tracker/bar%20graph/bar_graph.dart';
 import 'package:expense_tracker/components/my_list_tile.dart';
 import 'package:expense_tracker/database/expense_database.dart';
 import 'package:expense_tracker/helper/helper_functions.dart';
@@ -16,10 +17,31 @@ class _HomePageState extends State<HomePage> {
   TextEditingController nameController = TextEditingController();
   TextEditingController amountController = TextEditingController();
 
+  // futures to load graph data & monthly total
+  Future<Map<String, double>>? _monthlyTotalsFuture;
+  Future<double>? _calculateCurrentMonthTotal;
+
   @override
   void initState() {
-    Provider.of<ExpenseDataBase>(context, listen: false).readExpenses();
     super.initState();
+
+    // ensure context is available before accessing provider
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // reading db on an initial startup
+      Provider.of<ExpenseDataBase>(context, listen: false).readExpenses();
+
+      // loading futures (to refresh graph data)
+      refreshData();
+    });
+  }
+
+// refreshing graph data
+  void refreshData() {
+    final expenseDataBase =
+        Provider.of<ExpenseDataBase>(context, listen: false);
+
+    _monthlyTotalsFuture = expenseDataBase.calculateMonthlyTotals();
+    _calculateCurrentMonthTotal = expenseDataBase.calculateCurrentMonthTotal();
   }
 
   void openNewExpenseBox() {
@@ -92,27 +114,98 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ExpenseDataBase>(
-      builder: (context, value, child) => Scaffold(
+    return Consumer<ExpenseDataBase>(builder: (context, value, child) {
+      int startMonth = value.getStartMonth();
+      int startYear = value.getStartYear();
+      int currentMonth = DateTime.now().month;
+      int currentYear = DateTime.now().year;
+
+      int monthCount =
+          calculateMonthCount(startYear, startMonth, currentYear, currentMonth);
+
+      return Scaffold(
+        backgroundColor: Colors.grey.shade300,
         floatingActionButton: FloatingActionButton(
           onPressed: openNewExpenseBox,
           child: const Icon(Icons.add),
         ),
-        body: ListView.builder(
-          itemCount: value.allExpense.length,
-          itemBuilder: (context, index) {
-            Expense individualExpense = value.allExpense[index];
-
-            return MyListTile(
-              title: individualExpense.name,
-              trailing: formatAmount(individualExpense.amount),
-              onEditPressed: (context) => openEditBox(individualExpense),
-              onDeletePressed: (context) => openDeleteBox(individualExpense),
-            );
-          },
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          title: FutureBuilder(
+              future: _calculateCurrentMonthTotal,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.done) {
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('${snapshot.data!.toStringAsFixed(2)}€'),
+                      Text(getCurrentMonthName()),
+                    ],
+                  );
+                } else {
+                  return const Text('loading data..');
+                }
+              }),
         ),
-      ),
-    );
+        body: SafeArea(
+          child: Column(
+            children: [
+              SizedBox(
+                height: 250,
+                child: FutureBuilder(
+                  future: _monthlyTotalsFuture,
+                  builder: (context, snapshot) {
+                    // check if data is loaded
+                    if (snapshot.connectionState == ConnectionState.done) {
+                      Map<String, double> monthlyTotals = snapshot.data ?? {};
+
+                      List<double> monthlySummary = List.generate(
+                        monthCount,
+                        (index) {
+                          int year = startYear + (startMonth + index - 1) ~/ 12;
+                          int month = (startMonth + index - 1) % 12 + 1;
+
+                          String yearMonthKey = '$year-$month';
+
+                          return monthlyTotals[yearMonthKey] ?? 0.0;
+                        },
+                      );
+                      return MyBarGraph(
+                          monthlySummary: monthlySummary,
+                          startMonth: startMonth);
+                    } else {
+                      return const Center(
+                        child: Text("loading.."),
+                      );
+                    }
+                  },
+                ),
+              ),
+              const SizedBox(height: 25),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: value.allExpense.length,
+                  itemBuilder: (context, index) {
+                    int reversedIndex = value.allExpense.length - 1 - index;
+
+                    Expense individualExpense = value.allExpense[reversedIndex];
+
+                    return MyListTile(
+                      title: individualExpense.name,
+                      trailing: formatAmount(individualExpense.amount),
+                      onEditPressed: (context) =>
+                          openEditBox(individualExpense),
+                      onDeletePressed: (context) =>
+                          openDeleteBox(individualExpense),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    });
   }
 
   Widget _cancelButton() {
@@ -139,6 +232,8 @@ class _HomePageState extends State<HomePage> {
             date: DateTime.now(),
           );
           await context.read<ExpenseDataBase>().createNewExpense(newExpense);
+
+          refreshData();
 
           nameController.clear();
           amountController.clear();
@@ -173,6 +268,8 @@ class _HomePageState extends State<HomePage> {
           await context
               .read<ExpenseDataBase>()
               .updateExpense(existingId, updatedExpense);
+
+          refreshData();
         }
       },
       child: const Text("Save"),
@@ -184,6 +281,8 @@ class _HomePageState extends State<HomePage> {
       onPressed: () async {
         Navigator.pop(context);
         await context.read<ExpenseDataBase>().deleteExpense(id);
+
+        refreshData();
       },
       child: const Text("Delete"),
     );

@@ -53,4 +53,66 @@ class ExpenseDataBase extends ChangeNotifier {
     await isar.writeTxn(() => isar.expenses.delete(id));
     await readExpenses();
   }
+
+  // helper, calculates all of the expenses for each month
+  Future<Map<String, double>> calculateMonthlyTotals() async {
+    await readExpenses(); // ensures that the infos are updated
+
+    // map to keep track of the total expenses per month
+    Map<String, double> monthlyTotals = {};
+
+    // iterating over all expenses
+    for (var expense in _allExpenses) {
+      String yearMonth = '${expense.date.year}-${expense.date.month}'; // extracts the month from the date of expense creation
+
+      // if the year-month is not in the map => set the initial total amount to zero
+      if (!monthlyTotals.containsKey(yearMonth)) {
+        monthlyTotals[yearMonth] = 0;
+      }
+
+      // adding the expense amount to the total for the month
+      monthlyTotals[yearMonth] = monthlyTotals[yearMonth]! + expense.amount;
+    }
+    return monthlyTotals;
+  }
+
+  Future<double> calculateCurrentMonthTotal() async {
+    await readExpenses();
+
+    int currentMonth = DateTime.now().month;
+    int currentYear = DateTime.now().year;
+
+    List<Expense> currentMonthExpenses = _allExpenses.where((expense) {
+      return expense.date.month == currentMonth &&
+          expense.date.year == currentYear;
+    }).toList();
+
+    double total =
+        currentMonthExpenses.fold(0, (sum, expense) => sum + expense.amount);
+    return total;
+  }
+
+  int getStartMonth() {
+    if (_allExpenses.isEmpty) {
+      return DateTime.now().month;
+    }
+
+    // sort expenses to find the earliest
+    _allExpenses.sort(
+      (a, b) => a.date.compareTo(b.date),
+    );
+    return _allExpenses.first.date.month;
+  }
+
+  int getStartYear() {
+    if (_allExpenses.isEmpty) {
+      return DateTime.now().year;
+    }
+
+    // sort expenses to find the earliest
+    _allExpenses.sort(
+      (a, b) => a.date.compareTo(b.date),
+    );
+    return _allExpenses.first.date.year;
+  }
 }
