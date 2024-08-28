@@ -20,9 +20,13 @@ class MyListTile extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 25),
       child: Slidable(
+        key: Key(title),
+        closeOnScroll: true,
+        groupTag: '0',
         endActionPane: ActionPane(
-          motion: const StretchMotion(),
+          motion: const ScrollMotion(),
           children: [
+            const SizedBox(width: 10),
             SlidableAction(
               onPressed: onEditPressed,
               icon: Icons.edit,
@@ -30,6 +34,7 @@ class MyListTile extends StatelessWidget {
               foregroundColor: Colors.white,
               borderRadius: BorderRadius.circular(8),
             ),
+            const SizedBox(width: 10),
             SlidableAction(
               onPressed: onDeletePressed,
               icon: Icons.delete,

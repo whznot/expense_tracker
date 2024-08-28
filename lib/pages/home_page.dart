@@ -4,6 +4,7 @@ import 'package:expense_tracker/database/expense_database.dart';
 import 'package:expense_tracker/helper/helper_functions.dart';
 import 'package:expense_tracker/models/expense.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:provider/provider.dart';
 
 class HomePage extends StatefulWidget {
@@ -182,23 +183,26 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
               const SizedBox(height: 25),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: value.allExpense.length,
-                  itemBuilder: (context, index) {
-                    int reversedIndex = value.allExpense.length - 1 - index;
+              SlidableAutoCloseBehavior(
+                child: Expanded(
+                  child: ListView.builder(
+                    itemCount: value.allExpense.length,
+                    itemBuilder: (context, index) {
+                      int reversedIndex = value.allExpense.length - 1 - index;
 
-                    Expense individualExpense = value.allExpense[reversedIndex];
+                      Expense individualExpense =
+                          value.allExpense[reversedIndex];
 
-                    return MyListTile(
-                      title: individualExpense.name,
-                      trailing: formatAmount(individualExpense.amount),
-                      onEditPressed: (context) =>
-                          openEditBox(individualExpense),
-                      onDeletePressed: (context) =>
-                          openDeleteBox(individualExpense),
-                    );
-                  },
+                      return MyListTile(
+                        title: individualExpense.name,
+                        trailing: formatAmount(individualExpense.amount),
+                        onEditPressed: (context) =>
+                            openEditBox(individualExpense),
+                        onDeletePressed: (context) =>
+                            openDeleteBox(individualExpense),
+                      );
+                    },
+                  ),
                 ),
               ),
             ],

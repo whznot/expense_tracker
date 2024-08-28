@@ -58,6 +58,41 @@ class _MyBarGraphState extends State<MyBarGraph> {
     );
   }
 
+  Widget getBottomTitles(double value, TitleMeta meta) {
+    const textStyle = TextStyle(
+      color: Colors.grey,
+      fontWeight: FontWeight.bold,
+      fontSize: 14,
+    );
+
+    int monthIndex = (widget.startMonth + value.toInt()) % 12;
+
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
+
+    String text = months[monthIndex];
+
+    return SideTitleWidget(
+      axisSide: meta.axisSide,
+      child: Text(
+        text,
+        style: textStyle,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     initializeBarData();
@@ -79,14 +114,14 @@ class _MyBarGraphState extends State<MyBarGraph> {
               maxY: calculateMax(),
               gridData: const FlGridData(show: false),
               borderData: FlBorderData(show: false),
-              titlesData: const FlTitlesData(
+              titlesData: FlTitlesData(
                 show: true,
                 topTitles:
-                    AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                 rightTitles:
-                    AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                 leftTitles:
-                    AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                 bottomTitles: AxisTitles(
                   sideTitles: SideTitles(
                     showTitles: true,
@@ -123,62 +158,4 @@ class _MyBarGraphState extends State<MyBarGraph> {
       ),
     );
   }
-}
-
-Widget getBottomTitles(double value, TitleMeta meta) {
-  const textStyle = TextStyle(
-    color: Colors.grey,
-    fontWeight: FontWeight.bold,
-    fontSize: 14,
-  );
-
-  String text;
-  switch (value.toInt() % 12) {
-    case 0:
-      text = 'J';
-      break;
-    case 1:
-      text = 'F';
-      break;
-    case 2:
-      text = 'M';
-      break;
-    case 3:
-      text = 'A';
-      break;
-    case 4:
-      text = 'M';
-      break;
-    case 5:
-      text = 'J';
-      break;
-    case 6:
-      text = 'J';
-      break;
-    case 7:
-      text = 'A';
-      break;
-    case 8:
-      text = 'S';
-      break;
-    case 9:
-      text = 'O';
-      break;
-    case 10:
-      text = 'N';
-      break;
-    case 11:
-      text = 'D';
-      break;
-    default:
-      text = '';
-      break;
-  }
-  return SideTitleWidget(
-    axisSide: meta.axisSide,
-    child: Text(
-      text,
-      style: textStyle,
-    ),
-  );
 }
